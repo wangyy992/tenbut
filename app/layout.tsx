@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "满分，但是。｜朋友局意见分裂现场",
-  description: "TA 是满分，但是……你还给几分？和朋友一起抽题、打分、揭晓。满分女、满分男、追星线下三种玩法。",
+  title: "满分，但是。｜盲抽猜分默契局",
+  description: "A 盲抽分数，B 看牌描述，A 猜中数字就算默契对上。支持情境灵感、自定义描述和语音转文字。",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

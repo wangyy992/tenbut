@@ -10,6 +10,7 @@ async function load(code: string): Promise<Row> {
   if (!/^[A-Z2-9]{6}$/.test(code)) throw new GameError("房间码应为 6 位字母或数字。");
   const row = await database().prepare("SELECT data, version, expires FROM rooms WHERE code = ?").bind(code).first<Row>();
   if (!row || row.expires < Date.now()) throw new GameError("找不到房间，可能已过期。房间保留 24 小时。", 404);
+  if (JSON.parse(row.data).rules !== 2) throw new GameError("玩法已升级，请创建一个新房间。", 410);
   return row;
 }
 function error(e: unknown) {
