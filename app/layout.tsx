@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { I18nProvider } from "./i18n";
 
 export const metadata: Metadata = {
   title: "满分，但是。｜盲抽猜分默契局",
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased"><I18nProvider>{children}</I18nProvider></body>
     </html>
   );
 }

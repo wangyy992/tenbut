@@ -1,10 +1,11 @@
 import { modes, questions, type Mode } from "./questions";
+import {canonicalScenario} from "./scenario-translations";
 
 export type Player = { id: string; token: string; name: string; wins: number };
 export type Round = {
   id: string; number: number; guesser: string; describer: string; names: Record<string,string>;
   title: string; target: number | null; guess: number | null; clue: string; revision: number;
-  suggestions: string[]; matched: boolean; skipped: boolean;
+  clueKey?: string | null; suggestions: string[]; matched: boolean; skipped: boolean;
 };
 export type Room = {
   rules: 2; code: string; host: string; players: Player[]; mode: Mode; total: number;
@@ -38,11 +39,11 @@ export function publicRoom(room: Room, self: Player) {
     round: r ? {
       id:r.id, number:r.number, guesser:r.guesser, describer:r.describer, names:r.names, title:r.title,
       target: revealed || self.id === r.describer ? r.target : null,
-      guess: revealed ? r.guess : null, clue:r.clue, revision:r.revision,
+      guess: revealed ? r.guess : null, clue:r.clue, clueKey:r.clueKey||null, revision:r.revision,
       suggestions: self.id === r.describer && room.phase === "describing" ? r.suggestions : [],
       matched:r.matched, skipped:r.skipped,
     } : null,
-    history: room.history.map(({id,number,guesser,describer,names,title,target,guess,clue,matched,skipped}) => ({id,number,guesser,describer,names,title,target,guess,clue,matched,skipped})),
+    history: room.history.map(({id,number,guesser,describer,names,title,target,guess,clue,clueKey,matched,skipped}) => ({id,number,guesser,describer,names,title,target,guess,clue,clueKey:clueKey||null,matched,skipped})),
   };
 }
 export type PublicRoom = ReturnType<typeof publicRoom>;
@@ -92,7 +93,7 @@ export function act(room: Room, self: Player, action: string, body: Record<strin
     if(typeof body.text!=="string" || body.text.length>500) fail("描述最多 500 个字。");
     if(!Number.isInteger(body.revision) || Number(body.revision)<=r.revision) throw new GameError("描述已更新，请等待同步后重试。",409);
     if(action==="publish" && !(body.text as string).trim()) fail("先选择一个情境，或者自己描述吧。");
-    r.clue=body.text as string; r.revision=Number(body.revision);
+    r.clue=body.text as string; r.clueKey=canonicalScenario(r.clue); r.revision=Number(body.revision);
     if(action==="publish") room.phase="guessing";
   } else if(action==="guess") {
     const r=roundFor(room,body);

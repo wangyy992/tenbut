@@ -1,0 +1,111 @@
+import {questions} from './questions';
+type Trio=[string,string,string];
+const relationship:Trio[]=[
+ ['Always arrives forty minutes late and says you were early.','毎回40分遅刻して、あなたが早すぎると言う。','항상 40분 늦고는 네가 너무 일찍 왔다고 한다.'],
+ ['Replies instantly to every message, but only with “hahaha”.','返信はいつも即レス。でも全部「笑笑」だけ。','답장은 늘 칼답인데 전부 ㅋㅋㅋ뿐이다.'],
+ ['Their wallpaper is their ex. They say it is just a good photo.','スマホの壁紙が元恋人。写真がよく撮れているだけと言う。','휴대폰 배경이 전 애인이다. 그냥 사진이 잘 나와서란다.'],
+ ['Remembers everything you like, but never their own birthday.','あなたの好みは全部覚えているのに、自分の誕生日は忘れる。','네 취향은 다 기억하면서 자기 생일은 늘 잊는다.'],
+ ['Disappears for three days after every argument, then asks if you have eaten.','けんかすると3日消えて、戻ると「ご飯食べた？」と言う。','싸우면 사흘간 잠수하고 돌아와서는 밥 먹었냐고 한다.'],
+ ['Cooks brilliantly, but you always have to clean the kitchen.','料理は最高。でもキッチンの片付けは必ずあなた。','요리는 정말 잘하지만 뒷정리는 늘 네 몫이다.'],
+ ['Never posts you on social media, but all their friends know about you.','SNSにはあなたを載せない。でも友達は全員あなたを知っている。','SNS에 너를 올리진 않지만 친구들은 다 너를 안다.'],
+ ['Needs a two-hour call every day, even when there is nothing to say.','毎日2時間の電話が必須。話題がなくても切れない。','매일 두 시간 통화가 필수다. 할 말이 없어도 끊으면 안 된다.'],
+ ['Has the opposite taste in everything and rates your favorite film one star.','好みが全部正反対。あなたの好きな映画は星1つ。','취향이 완전히 반대고 네 최애 영화에 별 하나를 준다.'],
+ ['Has eight cats, and none of them likes you.','猫を8匹飼っていて、全員あなたになつかない。','고양이 여덟 마리를 키우는데 모두 너를 싫어한다.'],
+ ['Sends your arguments to AI for analysis, then shows you the verdict.','けんかをAIに分析させて、その判定結果を見せてくる。','싸운 내용을 AI에게 분석시키고 판결문을 보여 준다.'],
+ ['Plans holidays down to the minute, including bathroom breaks.','旅行の予定はトイレまで分刻み。','여행 일정을 화장실 시간까지 분 단위로 짠다.'],
+ ['Is incredibly sweet in person, but texts like they are replying to work emails.','会うとすごく優しいのに、メッセージは業務メールみたい。','만나면 다정한데 메시지는 업무 메일처럼 보낸다.'],
+ ['Always interrupts a romantic moment with a terrible joke.','いい雰囲気になると必ず寒いギャグを言う。','로맨틱한 순간마다 갑자기 썰렁한 농담을 한다.'],
+ ['Takes great photos, but wants two hundred shots for every ten they take of you.','写真は上手。でもあなたを10枚撮ったら、自分は200枚撮ってほしい。','사진을 잘 찍지만 네 사진 열 장 찍어 주면 자기 사진은 이백 장을 원한다.'],
+ ['Does not want marriage, but wants to spend their whole life with you.','結婚はしたくないけれど、一生あなたと真剣に付き合いたい。','결혼은 싫지만 너와 평생 진지하게 함께하고 싶어 한다.'],
+ ['Needs two days every week entirely alone, with no contact.','週に2日は完全に一人で過ごし、連絡も受け付けない。','일주일에 이틀은 완전한 혼자만의 시간이라 연락도 안 된다.'],
+ ['Has the opposite attitude to money and logs every expense to the last cent.','金銭感覚が正反対で、支出はすべて小数点まで記録する。','소비관이 정반대고 모든 지출을 소수점까지 기록한다.'],
+ ['Argues logically every time, but never hugs you first.','言い争いではいつも論理的。でも先に抱きしめてはくれない。','말다툼은 늘 논리적이지만 먼저 안아 주는 법은 없다.'],
+ ['Is still good friends with every ex.','元恋人全員と今も仲がいい。','전 애인 모두와 아직도 친한 친구다.'],
+ ['Insists on holding hands everywhere, even when taking out the rubbish.','ごみ出しでも、外では必ず手をつなぎたがる。','쓰레기 버리러 갈 때도 꼭 손을 잡아야 한다.'],
+ ['Never says “I love you”, but takes a detour to pick you up from work every day.','「愛してる」は言わない。でも毎日遠回りして仕事終わりに迎えに来る。','사랑한다는 말은 안 하지만 매일 돌아서 퇴근길에 데리러 온다.'],
+ ['Is more obsessed with idols than you, and stans your fandom’s rival.','あなた以上に推し活に夢中。しかも推しているのはライバル。','너보다 덕질에 더 진심인데 하필 네 팬덤의 라이벌을 좋아한다.'],
+ ['Every gift is cash, labeled “buy whatever you need”.','プレゼントは全部現金。メモには「必要なものを買ってね」。','선물은 항상 현금이고 필요한 걸 사라는 메모가 붙어 있다.'],
+ ['Lives eight time zones away, so you can meet only twice a year.','時差が8時間あって、年に2回しか会えない。','시차가 여덟 시간이고 일 년에 두 번만 만날 수 있다.'],
+ ['Gets very angry while gaming, but never takes it out on you.','ゲーム中はすぐ怒る。でもあなたには絶対に当たらない。','게임할 때 성질은 나쁘지만 너에게 화풀이하지는 않는다.'],
+ ['Uses your most embarrassing pet name in front of friends.','友達の前で、いちばん恥ずかしい愛称で呼ぶ。','친구들 앞에서 가장 부끄러운 애칭으로 너를 부른다.'],
+ ['Loves you deeply, but will not move away from their current city.','すごく愛してくれるけれど、今の街を離れる気はない。','너를 정말 사랑하지만 지금 사는 도시를 떠날 생각은 없다.'],
+ ['Watches every video you send and writes a thoughtful review.','送った動画を全部きちんと見て、感想文まで書いてくれる。','네가 보낸 영상을 전부 보고 진지한 감상문까지 써 준다.'],
+ ['Whenever you say “anything is fine”, takes you to the same noodle shop.','「何でもいい」と言うたび、同じ麺のお店に連れていく。','아무거나 먹자고 할 때마다 똑같은 국숫집에 데려간다.'],
+ ['Never wears perfume because they prefer the smell of laundry detergent.','香水はつけない。洗剤の香りがいちばん好きだから。','세제 냄새가 제일 좋다며 향수를 쓰지 않는다.'],
+ ['Their dog has the same name as their ex, and they have had the dog for ten years.','犬の名前が元恋人と同じ。犬はもう10年飼っている。','반려견 이름이 전 애인과 같고 키운 지는 십 년이다.'],
+ ['Holds a two-hour relationship review meeting every month.','毎月2時間、二人の関係を振り返る会議がある。','매달 두 시간씩 관계 회고 회의를 한다.'],
+ ['Keeps three thousand unflattering photos of you and refuses to delete any.','あなたの変顔写真が3000枚あって、1枚も消したがらない。','네 굴욕 사진 삼천 장을 한 장도 지우지 못한다.'],
+ ['Really likes you, but also really likes telling you to go to bed early.','あなたが大好き。でも早く寝なさいと言うのも大好き。','너를 정말 좋아하지만 일찍 자라고 잔소리하는 것도 좋아한다.'],
+ ['Never initiates meeting up, but always comes when you ask.','自分からは会おうと言わない。でも誘えば必ず来る。','먼저 만나자고 하진 않지만 부르면 항상 온다.'],
+ ['Turns every date into a vlog, including three extra takes before eating.','デートは全部Vlog化。食べる前に3カット撮り直す。','모든 데이트를 브이로그로 찍고 밥 먹기 전에 세 번 더 촬영한다.'],
+ ['Is emotionally stable, but responds to every worry with “just look on the bright side”.','情緒は安定しているけれど、悩みは全部「気にしないで」で終わる。','감정은 안정적인데 네 고민마다 좋게 생각하라고만 한다.'],
+ ['Never gets jealous and sincerely compliments you when someone else is interested.','まったく嫉妬しない。他の人に好かれると魅力的だねと褒める。','질투를 전혀 안 하고 누가 너를 좋아하면 매력 있다며 진심으로 칭찬한다.'],
+ ['Screams louder than you during horror films and needs you to soothe them afterward.','ホラー映画であなた以上に叫び、終わると寝かしつけてほしがる。','공포 영화에서 너보다 크게 소리 지르고 끝나면 재워 달라고 한다.'],
+];
+const extras:Trio[]=[
+ ['Loves buying you clothes, but insists you always wear matching outfits.','服をよく買ってくれるけれど、毎回おそろいを着たがる。','옷 사 주는 걸 좋아하지만 매번 커플룩을 입어야 한다.'],
+ ['Always cheers you up, but sends the same cute stickers to every friend.','気分を上げるのが上手。でも同じかわいいスタンプを友達全員に送る。','기분을 잘 풀어 주지만 같은 귀여운 이모티콘을 모든 친구에게 보낸다.'],
+ ['Fixes every appliance, but expects ten minutes of praise each time.','家電は何でも直せるけれど、毎回10分は褒めてほしい。','가전은 다 고치지만 매번 십 분씩 칭찬해 줘야 한다.'],
+ ['Is exactly your type, but all his friends call him “big boss”.','完全にタイプなのに、友達から「兄貴」と呼ばれている。','완벽한 이상형인데 친구들이 다 형님이라고 부른다.'],
+];
+const concert:Trio[]=[
+ ['You are in the front row, but someone holds up a huge flag in front of you all night.','最前列なのに、目の前の人がずっと大きな旗を掲げている。','맨 앞줄인데 앞사람이 공연 내내 큰 깃발을 들고 있다.'],
+ ['Your bias looks into your eyes for ten seconds, but your phone has just died.','推しと10秒目が合ったのに、スマホの充電が切れた。','최애와 십 초 동안 눈이 마주쳤는데 휴대폰 배터리가 꺼졌다.'],
+ ['The setlist is all your favorite songs, but your bias is absent that day.','セトリは好きな曲ばかり。でもその日は推しが欠席。','세트리스트가 전부 최애곡인데 그날 최애가 불참한다.'],
+ ['You win a fansign, but have only thirty seconds and are too nervous to speak.','サイン会に当選。でも30秒しかなく、緊張で一言も出ない。','팬사인회에 당첨됐지만 삼십 초뿐이고 너무 떨려서 한마디도 못 한다.'],
+ ['You get a front-row ticket at face value, but it is a workday and you have no leave left.','定価で最前列が取れたけれど、平日で有休がもうない。','정가로 앞줄 표를 구했지만 평일이고 연차가 없다.'],
+ ['Your bias remembers you, but only because you fell over last time.','推しが覚えていてくれたけれど、前回転んだ人としてだった。','최애가 너를 기억하지만 지난번에 넘어진 사람으로 기억한다.'],
+ ['You are close enough to see every eyelash, but stand right beside a speaker.','まつげまで見える距離だけど、スピーカーの真横。','속눈썹까지 보이는 거리인데 바로 옆이 스피커다.'],
+ ['You have a free VIP ticket, but must go with the ex you least want to see.','無料のVIPチケット。でも一緒に行くのはいちばん会いたくない元恋人。','VIP 표가 공짜지만 가장 만나기 싫은 전 애인과 가야 한다.'],
+ ['You win a photo opportunity, but blink at the exact moment it is taken.','写真撮影に当選したのに、シャッターの瞬間に目を閉じた。','사진 촬영에 당첨됐는데 찍는 순간 눈을 감았다.'],
+ ['Everyone is there and the performances are incredible, but home is a ten-hour overnight bus ride away.','全員そろって最高のステージ。でも帰りは夜行バスで10時間。','전원이 나오고 무대도 최고지만 돌아갈 때 야간 버스를 열 시간 타야 한다.'],
+ ['Your bias notices your cheering, then interacts with the person next to you.','推しが応援に気づいた。でもその後のファンサは隣の人へ。','최애가 응원을 알아봤지만 옆 사람에게 팬서비스를 한다.'],
+ ['Tickets are half price today, but you paid full price yesterday.','今日からチケット半額。でも昨日定価で買ったばかり。','오늘 표가 반값이 됐는데 어제 정가로 샀다.'],
+ ['They finally perform your favorite deep cut, but you are the only one who knows the fan chant.','大好きな隠れた名曲を歌ってくれたけれど、掛け声を知るのは自分だけ。','좋아하는 숨은 명곡을 드디어 불렀는데 응원법을 아는 건 너뿐이다.'],
+ ['The encore lasts an extra hour, but you will miss the last train.','アンコールが1時間延長。でも終電を逃してしまう。','앙코르를 한 시간 더 해 주지만 막차를 놓치게 된다.'],
+ ['Your seat is right beside the moving stage, but your bias passes on the other side.','トロッコのすぐ横。でも推しのトロッコは反対側を通る。','이동 무대 바로 옆자리지만 최애는 반대쪽으로 지나간다.'],
+ ['The crowd is amazing, but the person beside you sings louder than the sound system.','会場の盛り上がりは最高。でも隣の人の歌が音響より大きい。','현장 분위기는 최고인데 옆 사람이 스피커보다 크게 노래한다.'],
+ ['You get a perfect fancam, but discover your finger covered the microphone.','完璧な動画が撮れたのに、指でマイクをふさいでいた。','완벽한 직캠을 찍었는데 손가락이 마이크를 막고 있었다.'],
+ ['Your bias speaks to you in Chinese, but you do not understand it in the moment.','推しが中国語で話してくれたのに、その場では聞き取れなかった。','최애가 중국어로 말해 줬지만 그때 못 알아들었다.'],
+ ['You get the center spot, but a two-meter-tall person stands in front of you.','ど真ん中を取れたのに、前に身長2メートルの人が立つ。','정중앙 자리를 잡았는데 키 이 미터인 사람이 앞에 선다.'],
+ ['Your sign is the only one your bias reads, but they get your name wrong.','推しが読んだボードは自分だけ。でも名前を読み間違えた。','최애가 네 팻말만 읽어 줬는데 이름을 틀렸다.'],
+ ['You get a high-five from your bias, but you are holding an open bubble tea in that hand.','推しとハイタッチ成功。でもその手にはふたのないタピオカ。','최애와 하이파이브를 했는데 그 손에 뚜껑 없는 버블티가 들려 있다.'],
+ ['The staging, setlist and performance are perfect, but the venue bans phones.','演出もセトリも調子も最高。でもスマホ持ち込み禁止。','무대 연출도 세트리스트도 컨디션도 완벽하지만 휴대폰 반입 금지다.'],
+ ['Your banner appears on the big screen while you are secretly yawning.','スローガンが大画面に映った瞬間、こっそりあくびをしていた。','네 슬로건이 전광판에 잡혔는데 몰래 하품하는 중이었다.'],
+ ['Your friend saves you a brilliant seat, but you are three sections apart.','友達が最高の席を取ってくれたけれど、二人は3ブロック離れている。','친구가 좋은 자리를 잡아 줬지만 서로 세 구역이나 떨어져 있다.'],
+ ['You say everything you prepared at the fansign, but forget to start recording.','サイン会で用意した話は全部できた。でも録音を押し忘れた。','팬사인회에서 준비한 말은 다 했는데 녹음을 깜빡했다.'],
+ ['You run into your bias buying coffee, but you are wearing a rival group’s merch.','隣でコーヒーを買う推しに遭遇。でも別グループのグッズを着ている。','커피 사는 최애를 우연히 만났는데 라이벌 그룹 굿즈를 입고 있다.'],
+ ['You win soundcheck access, but it is group rehearsal only, without your bias’s solo.','サウンドチェックに当選。でもグループ練習だけで推しのソロはない。','사운드체크에 당첨됐지만 단체 리허설뿐이고 최애 솔로는 없다.'],
+ ['The concert is right outside your home, but afterward you must work seven days straight.','ライブは家のすぐ近く。でも終わったら7連勤。','공연장이 집 앞인데 공연 후 칠 일 연속 출근해야 한다.'],
+ ['Your bias notices your sign, but it has your friend’s name on it.','推しがボードに反応したけれど、書いてあるのは友達の名前。','최애가 팻말을 봐 줬는데 적힌 이름은 친구 이름이다.'],
+ ['You get a free VIP upgrade, but must queue outside for six hours.','無料でVIPにアップグレード。でも屋外で6時間並ぶ必要がある。','무료로 VIP 업그레이드를 받지만 밖에서 여섯 시간 줄을 서야 한다.'],
+ ['Nothing blocks your view, but you must stand for the entire four-hour show.','視界を遮るものはゼロ。でも4時間ずっと立ちっぱなし。','시야 방해는 전혀 없지만 네 시간 내내 서 있어야 한다.'],
+ ['You are invited on stage, but have to perform a dance you have never learned.','ステージに呼ばれたけれど、習ったことのないダンスを踊ることに。','무대에 초대받았는데 배운 적 없는 춤을 현장에서 춰야 한다.'],
+ ['Your bias makes a heart at your camera, but your tear-streaked face is also in the shot.','推しがカメラにハート。でも泣いて崩れた自分の顔も映っている。','최애가 카메라에 하트를 해 줬는데 눈물 범벅인 네 얼굴도 같이 찍혔다.'],
+ ['Every member interacts with you except your bias.','全員がファンサをくれたのに、推しだけ何もなかった。','멤버 모두와 소통했는데 최애만 아무것도 없다.'],
+ ['Everyone calls the concert legendary, but you have to write a work report as soon as you get home.','みんな伝説のライブだと言う。でも帰ったらすぐ業務日報。','다들 역대급 공연이라지만 집에 가자마자 업무 일지를 써야 한다.'],
+ ['Everyone loves your fan gifts, but after handing them out you notice the date is wrong.','配った応援グッズが大好評。でも全部配ってから日付の誤植に気づいた。','나눔 굿즈가 예쁘다고 칭찬받았지만 다 나눠 준 뒤 날짜 오타를 발견했다.'],
+ ['You witness their best performance ever, but not a single recording survives.','デビュー以来最高のステージを見た。でも映像は一つも残らなかった。','데뷔 이후 최고의 무대를 봤지만 남아 있는 영상이 하나도 없다.'],
+ ['They add a show in your city just after you buy flights to another one.','地元公演が追加。でも別の街への航空券を買ったばかり。','네 도시 공연이 추가됐는데 방금 다른 도시로 가는 비행기 표를 샀다.'],
+ ['You win a one-on-one photo, but must wait six months to receive it.','ツーショットに当選。でも写真が届くのは半年後。','일대일 사진에 당첨됐지만 사진은 반년 후에 받는다.'],
+ ['Your bias sings your favorite song for you while you are outside in the bathroom.','推しが好きな曲をアカペラで歌ってくれた時、自分は会場外のトイレにいた。','최애가 네 최애곡을 무반주로 불러 줬는데 그때 너는 밖의 화장실에 있었다.'],
+];
+const home: [string,Trio][]=[
+ ['长得完全是你的理想型，但是不爱洗澡。',['Looks exactly like your dream partner, but does not like showering.','見た目は完全に理想のタイプ。でもお風呂が苦手。','외모는 완벽한 이상형인데 씻는 걸 싫어한다.']],
+ ['拿到了第一排，但本命当天请假了。',['You get front-row seats, but your bias is absent that day.','最前列が取れたのに、その日は推しが欠席。','맨 앞줄을 잡았는데 그날 최애가 불참한다.']],
+ ['每条消息都会秒回，但是从不主动约你见面。',['Replies instantly to everything, but never initiates meeting up.','全部即レス。でも自分から会おうとは言わない。','답장은 늘 칼답인데 먼저 만나자고는 안 한다.']],
+ ['本命对着你比心了，但是你的手机刚好没电。',['Your bias makes a heart for you, but your phone has just died.','推しがハートをくれた瞬間、スマホの電池が切れた。','최애가 너에게 하트를 해 줬는데 마침 휴대폰이 꺼졌다.']],
+ ['做饭特别好吃，但是每次都要你收拾厨房。',['Cooks amazing food, but leaves all the cleaning to you.','料理は最高。でも片付けは毎回あなた。','요리는 정말 잘하지만 뒷정리는 매번 네 몫이다.']],
+ ['记得你所有喜好，但是拍照永远把你拍成表情包。',['Remembers everything you like, but every photo of you becomes a meme.','あなたの好みは全部覚えているのに、写真は毎回ネタ画像になる。','네 취향은 전부 기억하지만 네 사진은 항상 짤처럼 찍는다.']],
+];
+const rows:Record<string,Trio>={};
+questions.girl.slice(0,40).forEach((q,i)=>rows[q]=relationship[i]);
+questions.girl.slice(40).forEach((q,i)=>rows[q]=extras[i]);
+questions.boy.slice(40).forEach((q,i)=>rows[q]=extras[i+2]);
+questions.concert.forEach((q,i)=>rows[q]=concert[i]);
+for(const [q,row] of home)rows[q]=row;
+export function scenarioText(lang:string,text:string){const i={en:0,ja:1,ko:2}[lang];return i===undefined?text:rows[text]?.[i]??text;}
+const canonical=new Map<string,string>();
+for(const [key,row] of Object.entries(rows)){canonical.set(key,key);for(const text of row)canonical.set(text,key);}
+export function canonicalScenario(text:string){return canonical.get(text)||null;}
+export const scenarioSources=Object.keys(rows);
