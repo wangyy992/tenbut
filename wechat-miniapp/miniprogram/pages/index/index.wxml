@@ -1,0 +1,142 @@
+<wxs module="f">
+function fill(text, value) { return String(text || '').replace('{0}', String(value || '')) }
+function first(text) { return String(text || '').slice(0, 1) }
+function active(phase) { return phase === 'drawing' || phase === 'describing' || phase === 'guessing' }
+module.exports = { fill: fill, first: first, active: active }
+</wxs>
+<view class="page safe-bottom">
+  <view class="topbar">
+    <view class="brand"><view class="logo">10<text>?</text></view><text>TEN BUT</text></view>
+    <view class="top-actions">
+      <picker mode="selector" range="{{langNames}}" value="{{langIndex}}" bindchange="changeLanguage">
+        <view class="language">◎ {{languageNames[lang]}}⌄</view>
+      </picker>
+      <button class="help" bindtap="toggleHelp">?</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showHelp}}" class="help-card">
+    <view class="help-title"><text>{{ui['怎么玩']}}</text><button bindtap="toggleHelp">×</button></view>
+    <text>{{ui['A 盲抽 0–10 分，自己看不到。B 看到分数后选择或自定义情境，A 再猜数字。完全相同就算默契命中。']}}</text>
+  </view>
+
+  <block wx:if="{{!room}}">
+    <view class="hero">
+      <view class="eyebrow">✷ {{ui['盲抽猜分 · 朋友默契小游戏']}}</view>
+      <view class="title">TEN <text>BUT</text></view>
+      <view class="subtitle">{{ui['A 抽分数，但自己看不到。']}}<br/>{{ui['B 看牌描述，A 来猜：你心里是几分？']}}</view>
+      <view class="sample-card">
+        <text class="sample-tag">IF B SAW A 3...</text>
+        <text class="sample-prefix">{{lang === 'zh' ? '这是一个满分男，但是——' : 'TEN, BUT—'}}</text>
+        <text class="sample-main">{{lang === 'zh' ? '长得完全是你的理想型，但是不爱洗澡。' : lang === 'ja' ? '見た目は完全に理想のタイプ。でもお風呂が苦手。' : lang === 'ko' ? '외모는 완벽한 이상형인데 씻는 걸 싫어한다.' : 'Looks exactly like your dream partner, but does not like showering.'}}</text>
+      </view>
+    </view>
+
+    <view class="entry card">
+      <view class="tabs">
+        <button class="{{tab === 'create' ? 'active' : ''}}" data-tab="create" bindtap="chooseTab">{{ui['开一局']}}</button>
+        <button class="{{tab === 'join' ? 'active' : ''}}" data-tab="join" bindtap="chooseTab">{{ui['加入朋友']}}</button>
+      </view>
+      <text class="label">{{ui['怎么称呼你']}}</text>
+      <input class="input" maxlength="16" placeholder="{{ui['给自己起个昵称']}}" value="{{name}}" data-field="name" bindinput="setField"/>
+      <block wx:if="{{tab === 'create'}}">
+        <text class="label spaced">{{ui['今天聊什么']}}</text>
+        <view class="modes">
+          <button wx:for="{{modes}}" wx:key="key" class="{{mode === item.key ? 'selected' : ''}}" data-mode="{{item.key}}" bindtap="chooseMode"><text>{{item.icon}}</text>{{item.label}}</button>
+        </view>
+        <view class="rounds"><text>{{ui['玩几轮']}}</text><view><button wx:for="{{[5,10,20]}}" wx:key="*this" class="{{total === item ? 'selected' : ''}}" data-total="{{item}}" bindtap="chooseTotal">{{item}}</button></view></view>
+      </block>
+      <block wx:else>
+        <text class="label spaced">{{ui['朋友的房间码']}}</text>
+        <input class="input code-input" maxlength="6" placeholder="{{ui['6 位房间码']}}" value="{{code}}" data-field="code" bindinput="setField"/>
+      </block>
+      <button class="primary" loading="{{busy}}" bindtap="submitEntry">{{tab === 'create' ? ui['创建默契局'] : ui['加入朋友局']}}</button>
+      <view class="entry-foot"><text>{{ui['2–12 人轮流玩']}}</text><text>{{ui['实时文字同步']}}</text><text>{{ui['无需注册']}}</text></view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="room-head">
+      <view><text>{{ui['房间码']}}</text><text class="room-code" bindtap="copyCode">{{room.code}}</text></view>
+      <button open-type="share" class="share">{{ui['邀请朋友']}}</button>
+    </view>
+
+    <view wx:if="{{room.phase === 'lobby'}}" class="game-card lobby">
+      <view class="big-mark">✳</view>
+      <text class="eyebrow">CAN YOU READ MY MIND?</text>
+      <text class="game-title">{{lang === 'zh' ? '人齐了，猜猜彼此。' : 'READY TO READ MINDS?'}}</text>
+      <view class="code-box" bindtap="copyCode"><text>{{ui['房间码']}}</text><strong>{{room.code}}</strong></view>
+      <button wx:if="{{room.self === room.host}}" class="primary" disabled="{{room.players.length < 2 || busy}}" loading="{{busy}}" data-action="next" bindtap="action">{{room.players.length < 2 ? ui['等一位朋友加入'] : f.fill(ui['开始盲抽猜分（{0} 人）'], room.players.length)}}</button>
+      <view wx:else class="waiting">◌ {{ui['等待房主开始游戏']}}</view>
+    </view>
+
+    <block wx:elif="{{room.phase !== 'finished'}}">
+      <view class="phase-line"><text>{{room.phase === 'results' ? 'RESULT' : 'ROUND ' + room.round.number}}</text><text>{{room.round.names[room.round.guesser]}} A · {{room.round.names[room.round.describer]}} B</text></view>
+
+      <view wx:if="{{room.phase === 'drawing'}}" class="game-card center">
+        <view class="blind-card">?</view>
+        <block wx:if="{{room.self === room.round.guesser}}">
+          <text class="game-title">{{ui['抽一张看不见的分数牌']}}</text>
+          <button class="primary" loading="{{busy}}" data-action="draw" bindtap="action">✷ DRAW</button>
+        </block>
+          <text wx:else class="waiting">{{f.fill(ui['等待 {0} 抽牌…'], room.round.names[room.round.guesser])}}</text>
+      </view>
+
+      <view wx:elif="{{room.phase === 'describing'}}" class="game-card">
+        <block wx:if="{{room.self === room.round.describer}}">
+          <view class="secret"><text>{{ui['你抽到了一个秘密分数']}}</text><strong>{{room.round.target}}</strong><small>{{ui['只有描述者能看到']}}</small></view>
+          <view class="section-head"><text>{{ui['选择一个情境']}}</text><button data-action="suggestions" bindtap="action">↻ {{ui['换一组']}}</button></view>
+          <view class="suggestions"><button wx:for="{{room.round.suggestions}}" wx:key="raw" data-raw="{{item.raw}}" data-text="{{item.text}}" bindtap="selectSuggestion">{{item.text}}</button></view>
+          <text class="label spaced">{{ui['或者自己描述']}}</text>
+          <textarea class="textarea" maxlength="500" placeholder="{{ui['不要直接说出数字']}}" value="{{clue}}" bindinput="clueInput"/>
+          <button class="speech {{recording ? 'recording' : ''}}" bindtouchstart="startSpeech" bindtouchend="stopSpeech" bindtouchcancel="stopSpeech">● {{recording ? ui['正在听…松开结束'] : ui['按住说话']}}</button>
+          <text class="speech-note">{{ui['中文和 English 支持语音转字；日语、韩语请手动输入。']}}</text>
+          <button class="primary" disabled="{{!clue || busy}}" loading="{{busy}}" bindtap="publish">{{ui['确认描述，让 A 猜分']}}</button>
+        </block>
+        <block wx:else>
+          <view class="waiting-stage">✦<text>{{f.fill(ui['等待 {0} 描述…'], room.round.names[room.round.describer])}}</text><small wx:if="{{room.round.clue}}">“{{room.round.clue}}”</small></view>
+        </block>
+      </view>
+
+      <view wx:elif="{{room.phase === 'guessing'}}" class="game-card">
+        <text class="eyebrow">{{ui['这就是 B 给你的情境']}}</text>
+        <text class="clue">{{room.round.clue}}</text>
+        <block wx:if="{{room.self === room.round.guesser}}">
+          <text class="game-title score-title">{{ui['你觉得这是几分？']}}</text>
+          <view class="score-grid"><button wx:for="{{scores}}" wx:key="*this" class="{{selectedScore === item ? 'picked' : ''}}" data-score="{{item}}" bindtap="chooseScore">{{item}}</button></view>
+          <button class="primary" disabled="{{selectedScore === null || busy}}" loading="{{busy}}" bindtap="guess">LOCK IN</button>
+        </block>
+        <text wx:else class="waiting">{{f.fill(ui['等待 {0} 猜分…'], room.round.names[room.round.guesser])}}</text>
+      </view>
+
+      <view wx:elif="{{room.phase === 'results'}}" class="game-card result">
+        <text class="eyebrow">REVEAL</text>
+        <text class="result-title">{{room.round.matched ? ui['猜中了！'] : ui['差一点！']}}</text>
+        <view class="reveal"><view><text>{{ui['牌面']}}</text><strong>{{room.round.target}}</strong></view><text>→</text><view><text>{{ui['猜分']}}</text><strong>{{room.round.guess === null ? '—' : room.round.guess}}</strong></view></view>
+        <text class="clue small">{{room.round.clue}}</text>
+        <button wx:if="{{room.self === room.host}}" class="primary" loading="{{busy}}" data-action="next" bindtap="action">{{ui['下一轮']}}</button>
+      </view>
+    </block>
+
+    <view wx:else class="game-card result">
+      <text class="eyebrow">A LITTLE MORE IN SYNC.</text>
+      <text class="game-title">{{ui['本局已结束']}}</text>
+      <view class="podium"><view wx:for="{{room.players}}" wx:key="id"><text>{{item.name}}</text><strong>{{item.wins}}</strong></view></view>
+      <button wx:if="{{room.self === room.host}}" class="primary" loading="{{busy}}" data-action="restart" bindtap="action">{{ui['再来一局']}}</button>
+    </view>
+
+    <view class="members card">
+      <view class="section-head"><text>{{ui['在场朋友']}}</text><small>{{room.players.length}} / 12</small></view>
+      <view class="member" wx:for="{{room.players}}" wx:key="id">
+        <view class="avatar">{{f.first(item.name)}}</view>
+        <view><text>{{item.name}} {{item.id === room.self ? '· ' + ui['你'] : ''}}</text><small>{{item.id === room.host ? ui['房主'] : room.round && item.id === room.round.guesser ? ui['猜分者'] : room.round && item.id === room.round.describer ? ui['描述者'] : ui['围观中']}}</small></view>
+        <strong>{{item.wins}}</strong>
+      </view>
+      <view class="room-actions">
+        <button wx:if="{{room.self === room.host && room.round && f.active(room.phase)}}" data-action="skip" bindtap="action">{{ui['跳过本轮']}}</button>
+        <button bindtap="confirmLeave">{{ui['离开房间']}}</button>
+      </view>
+      <text class="connection">{{online ? '● ONLINE' : '○ ' + ui['连接中…']}}</text>
+    </view>
+  </block>
+</view>

@@ -43,3 +43,6 @@ yarn-error.log*
 
 # OS metadata
 .DS_Store
+
+# WeChat Developer Tools local state
+wechat-miniapp/project.private.config.json

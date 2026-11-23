@@ -1,0 +1,21 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "TEN BUT",
+    "navigationBarBackgroundColor": "#fff7f5",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fff7f5",
+    "backgroundTextStyle": "dark"
+  },
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.3",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "permission": {
+    "scope.record": { "desc": "用于把你说的情境转换成文字，不会保存录音" }
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}
