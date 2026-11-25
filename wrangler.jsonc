@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tenbut",
+  "main": "worker/cloudflare.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "binding": "ASSETS" },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "tenbut-rooms", "migrations_dir": "drizzle" }
+  ],
+  "observability": { "enabled": true }
+}
