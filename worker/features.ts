@@ -1,11 +1,10 @@
 import { authenticate, type Room } from '../app/game';
-type Env = Cloudflare.Env & {ADMIN_PASSWORD?:string; RTC_ICE_SERVERS?:string};
+type Env = Cloudflare.Env & {ADMIN_PASSWORD?:string};
 export const featureSchema = [
+ 'CREATE TABLE IF NOT EXISTS discussion (id INTEGER PRIMARY KEY AUTOINCREMENT, request TEXT NOT NULL UNIQUE, room TEXT NOT NULL, round TEXT NOT NULL, player TEXT NOT NULL, name TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL)',
+ 'CREATE INDEX IF NOT EXISTS discussion_room ON discussion(room,round,id)',
  'CREATE TABLE IF NOT EXISTS visits (id TEXT PRIMARY KEY, visitor TEXT NOT NULL, day TEXT NOT NULL)',
  'CREATE TABLE IF NOT EXISTS usage (visitor TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY(visitor,day))',
- 'CREATE TABLE IF NOT EXISTS voice_peers (room TEXT NOT NULL, round TEXT NOT NULL, player TEXT NOT NULL, instance TEXT NOT NULL, seen INTEGER NOT NULL, PRIMARY KEY(room,player))',
- 'CREATE TABLE IF NOT EXISTS voice_signals (id INTEGER PRIMARY KEY AUTOINCREMENT, room TEXT NOT NULL, round TEXT NOT NULL, sender TEXT NOT NULL, recipient TEXT NOT NULL, payload TEXT NOT NULL, created INTEGER NOT NULL)',
- 'CREATE INDEX IF NOT EXISTS voice_delivery ON voice_signals(room,round,recipient,id)',
  'CREATE TABLE IF NOT EXISTS admin_attempts (key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, reset INTEGER NOT NULL)',
 ];
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -44,35 +43,32 @@ export async function features(req:Request,env:Env):Promise<Response|null>{
   if(req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
   await recordUse(req,db);return json({ok:true});
  }
- if(url.pathname!=='/api/voice')return null;
- if(req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
- if(Number(req.headers.get('content-length')||0)>20000)return json({error:'Too large'},413);
- const raw=await req.text();if(raw.length>20000)return json({error:'Too large'},413);
- const body=JSON.parse(raw);const row=await db.prepare('SELECT data,expires FROM rooms WHERE code=?').bind(String(body.code)).first<{data:string;expires:number}>();
+ if(url.pathname==='/api/voice')return json({error:'实时语音已关闭，请使用文字讨论。'},410);
+ if(url.pathname!=='/api/discussion')return null;
+ if(req.method!=='POST'||req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
+ if(Number(req.headers.get('content-length')||0)>8192)return json({error:'Too large'},413);
+ const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);
+ let body;try{body=JSON.parse(raw);}catch{return json({error:'Invalid request'},400);}
+ if(!body||typeof body!=='object')return json({error:'Invalid request'},400);
+ const row=await db.prepare('SELECT data,expires FROM rooms WHERE code=?').bind(String(body.code)).first<{data:string;expires:number}>();
  if(!row||row.expires<Date.now())return json({error:'房间已过期'},404);
  const room:Room=JSON.parse(row.data);let self;try{self=authenticate(room,req.headers.get('authorization')?.replace(/^Bearer /,'')||null);}catch{return json({error:'请重新加入房间'},401);}
- const round=room.round;if(!round||round.id!==body.round||room.phase!=='results')return json({error:'语音仅在本轮结果讨论时开放'},409);
- if(body.action==='leave'){
-  await db.prepare('DELETE FROM voice_peers WHERE room=? AND player=? AND instance=?').bind(room.code,self.id,body.instance).run();return json({ok:true});
- }
- if(!/^[a-f0-9-]{36}$/.test(body.instance))return json({error:'Invalid instance'},400);
+ const round=room.round;if(!round||round.id!==body.round||room.phase!=='results')return json({error:'本轮讨论已结束'},409);
  const now=Date.now();
- await db.prepare('DELETE FROM voice_signals WHERE created<?').bind(now-60000).run();
- if(body.action==='join'||body.action==='poll'){
-  if(body.action==='join')await db.prepare('INSERT INTO voice_peers(room,round,player,instance,seen) VALUES (?,?,?,?,?) ON CONFLICT(room,player) DO UPDATE SET round=excluded.round,instance=excluded.instance,seen=excluded.seen').bind(room.code,round.id,self.id,body.instance,now).run();
-  else await db.prepare('UPDATE voice_peers SET seen=? WHERE room=? AND player=? AND instance=?').bind(now,room.code,self.id,body.instance).run();
-  const peers=await db.prepare('SELECT player,instance FROM voice_peers WHERE room=? AND round=? AND seen>?').bind(room.code,round.id,now-15000).all<{player:string;instance:string}>();
-  const active=peers.results.filter(p=>room.players.some(m=>m.id===p.player));
-  if(!active.some(p=>p.player===self.id&&p.instance===body.instance))return json({error:'语音会话已结束，请重新加入'},409);
-  const signals=await db.prepare('SELECT id,sender,payload FROM voice_signals WHERE room=? AND round=? AND recipient=? AND id>? AND created>? ORDER BY id LIMIT 100').bind(room.code,round.id,self.id,Math.max(0,Number(body.after)||0),now-60000).all();
-  let iceServers:unknown=[{urls:'stun:stun.cloudflare.com:3478'}];try{if(env.RTC_ICE_SERVERS)iceServers=JSON.parse(env.RTC_ICE_SERVERS);}catch{}
-  return json({peers:active.map(p=>({...p,name:room.players.find(m=>m.id===p.player)!.name})),signals:signals.results,iceServers});
- }
- if(body.action==='signal'){
-  const peers=await db.prepare('SELECT player,instance FROM voice_peers WHERE room=? AND round=? AND seen>?').bind(room.code,round.id,now-15000).all<{player:string;instance:string}>();
-  if(!peers.results.some(p=>p.player===self.id&&p.instance===body.instance)||!peers.results.some(p=>p.player===body.to)||!room.players.some(p=>p.id===body.to))return json({error:'对方尚未加入语音'},409);
-  if(!['offer','answer','candidate'].includes(body.payload?.type))return json({error:'Invalid signal'},400);
-  await db.prepare('INSERT INTO voice_signals(room,round,sender,recipient,payload,created) VALUES (?,?,?,?,?,?)').bind(room.code,round.id,self.id,body.to,JSON.stringify({...body.payload,instance:body.instance}),now).run();return json({ok:true});
- }
- return json({error:'Invalid action'},400);
+ if(body.action==='send'){
+  await db.prepare('DELETE FROM discussion WHERE created<?').bind(now-86400000).run();
+  if(typeof body.text!=='string'||!body.text.trim()||body.text.length>500||!/^[a-f0-9-]{36}$/.test(body.id))return json({error:'讨论内容需要为 1–500 个字。'},400);
+  const existing=await db.prepare('SELECT id FROM discussion WHERE request=?').bind(body.id).first();
+  if(!existing){
+   const latest=await db.prepare('SELECT created FROM discussion WHERE room=? AND player=? ORDER BY id DESC LIMIT 1').bind(room.code,self.id).first<{created:number}>();
+   if(latest&&now-latest.created<1000)return json({error:'发送太快，请稍后重试。'},429);
+   const count=await db.prepare('SELECT COUNT(*) count FROM discussion WHERE room=? AND round=?').bind(room.code,round.id).first<{count:number}>();
+   if((count?.count||0)>=200)return json({error:'本轮讨论已达 200 条。'},429);
+   await db.prepare('INSERT OR IGNORE INTO discussion(request,room,round,player,name,text,created) VALUES (?,?,?,?,?,?,?)').bind(body.id,room.code,round.id,self.id,self.name,body.text.trim(),now).run();
+  }
+ }else if(body.action!=='list')return json({error:'Invalid action'},400);
+ const after=Number(body.after);if(!Number.isSafeInteger(after)||after<0)return json({error:'Invalid cursor'},400);
+ const messages=await db.prepare('SELECT id,player,name,text,created FROM discussion WHERE room=? AND round=? AND id>? ORDER BY id LIMIT 200').bind(room.code,round.id,after).all();
+ await db.prepare('DELETE FROM discussion WHERE created<?').bind(now-86400000).run();
+ return json({messages:messages.results});
 }

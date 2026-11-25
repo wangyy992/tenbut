@@ -24,13 +24,21 @@ try{
  assert.equal((await features(new Request('https://test.local/api/admin',{headers:{Authorization:'Basic '+btoa('admin:wrong')}}),env)).status,429);
  const a=player('A'),b=player('B');const room=newRoom('ABC234',a,'girl',5);room.players.push(b);act(room,a,'next',{});act(room,a,'draw',{round:room.round.id});act(room,b,'publish',{round:room.round.id,text:'test',revision:1});act(room,a,'guess',{round:room.round.id,score:room.round.target});
  sqlite.prepare('INSERT INTO rooms VALUES (?,?,0,?)').run(room.code,JSON.stringify(room),Date.now()+600000);
- const ia=crypto.randomUUID(),ib=crypto.randomUUID();const body={code:room.code,round:room.round.id,instance:ia,action:'join'};
- assert.equal((await features(request('/api/voice',body,'wrong'),env)).status,401);
- assert.equal((await features(request('/api/voice',{...body,round:'wrong'},a.token),env)).status,409);
- await features(request('/api/voice',body,a.token),env);await features(request('/api/voice',{...body,instance:ib},b.token),env);
- await features(request('/api/voice',{...body,action:'signal',to:b.id,payload:{type:'offer',sdp:{type:'offer',sdp:'test'}}},a.token),env);
- const forB=await features(request('/api/voice',{...body,instance:ib,action:'poll'},b.token),env).then(r=>r.json());assert.equal(forB.signals.length,1);assert.equal(forB.peers.length,2);
- const forA=await features(request('/api/voice',{...body,action:'poll'},a.token),env).then(r=>r.json());assert.equal(forA.signals.length,0,'signals delivered only to recipient');
- await features(request('/api/voice',{...body,action:'leave'},a.token),env);assert.equal((await features(request('/api/voice',{...body,action:'poll'},a.token),env)).status,409);
- console.log('PASS analytics deduplication, usage, admin authentication/rate limit, voice room membership, round scope, recipient isolation and leave.');
+
+ const body={code:room.code,round:room.round.id,action:'list',after:0};
+ assert.equal((await features(request('/api/voice',{},a.token),env)).status,410);
+ assert.equal((await features(request('/api/discussion',body,'wrong'),env)).status,401);
+ assert.equal((await features(request('/api/discussion',{...body,round:'wrong'},a.token),env)).status,409);
+ const send={...body,action:'send',id:crypto.randomUUID(),text:'我觉得这个分数刚刚好。'};
+ assert.equal((await features(request('/api/discussion',send,a.token),env)).status,200);
+ assert.equal((await features(request('/api/discussion',send,a.token),env)).status,200,'retry should be idempotent');
+ const responseB=await features(request('/api/discussion',body,b.token),env).then(r=>r.json());
+ assert.equal(responseB.messages.length,1);assert.equal(responseB.messages[0].name,'A');assert.equal(responseB.messages[0].text,send.text);
+ assert.equal((await features(request('/api/discussion',{...send,id:crypto.randomUUID()},a.token),env)).status,429);
+ assert.equal((await features(request('/api/discussion',{...send,id:crypto.randomUUID(),text:'x'.repeat(501)},b.token),env)).status,400);
+ const another=newRoom('XYZ234',b,'boy',5);sqlite.prepare('INSERT INTO rooms VALUES (?,?,0,?)').run(another.code,JSON.stringify(another),Date.now()+600000);
+ assert.equal((await features(request('/api/discussion',{...body,code:another.code},a.token),env)).status,401);
+ assert.equal((await features(request('/api/discussion',{...body,code:another.code},b.token),env)).status,409);
+ const after=await features(request('/api/discussion',{...body,after:responseB.messages[0].id},b.token),env).then(r=>r.json());assert.equal(after.messages.length,0);
+ console.log('PASS analytics/authentication, retired voice endpoint, discussion membership/round isolation, message validation, delivery, deduplication and rate limits.');
 }finally{await rm(temp,{recursive:true,force:true})}

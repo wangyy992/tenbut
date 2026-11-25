@@ -13,7 +13,7 @@ boundary against someone inspecting browser memory. Round secrets are never
 saved to browser storage or sent to the server. Refreshing resets local play.
 Starting a local game counts toward the same anonymous daily usage metric.
 
-## Analytics and post-round voice discussion
+## Analytics and post-round text discussion
 
 After deploying, add an encrypted runtime secret `ADMIN_PASSWORD` of at least 16
 characters in Worker Settings > Variables and Secrets. Do not put it in the repo.
