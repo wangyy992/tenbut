@@ -1,0 +1,36 @@
+import {build} from 'esbuild';
+import {DatabaseSync} from 'node:sqlite';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+const temp=await mkdtemp(join(tmpdir(),'tenbut-features-'));
+try{
+ await build({entryPoints:['worker/features.ts'],bundle:true,platform:'node',format:'esm',outfile:join(temp,'features.mjs')});
+ await build({entryPoints:['app/game.ts'],bundle:true,platform:'node',format:'esm',outfile:join(temp,'game.mjs')});
+ const {features,featureSchema,recordUse}=await import(pathToFileURL(join(temp,'features.mjs')));
+ const {newRoom,player,act}=await import(pathToFileURL(join(temp,'game.mjs')));
+ const sqlite=new DatabaseSync(':memory:');sqlite.exec('CREATE TABLE rooms(code TEXT PRIMARY KEY,data TEXT,version INTEGER,expires INTEGER)');for(const sql of featureSchema)sqlite.exec(sql);
+ const DB={prepare(sql){const s=sqlite.prepare(sql);const result=args=>({bind(...values){return result(values)},async run(){const r=s.run(...args);return {meta:{changes:Number(r.changes)}}},async first(){return s.get(...args)||null},async all(){return {results:s.all(...args)}}});return result([])}};
+ const env={DB,ADMIN_PASSWORD:'test-admin-password-only'};
+ const request=(path,body,token,cookie)=>new Request('https://test.local'+path,{method:'POST',headers:{Origin:'https://test.local','Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(body)});
+ const visit=()=>new Request('https://test.local/api/visit',{method:'POST',headers:{Origin:'https://test.local','X-Visit-Id':visitId}});
+ const visitId=crypto.randomUUID();const response=await features(visit(),env);assert.equal(response.status,204);await features(visit(),env);assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM visits').get().n,1,'same navigation must be deduplicated');
+ const cookie=response.headers.get('set-cookie').split(';')[0];await recordUse(request('/',{},null,cookie),DB);await recordUse(request('/',{},null,cookie),DB);
+ assert.equal((await features(new Request('https://test.local/api/admin'),env)).status,401);
+ const stats=await features(new Request('https://test.local/api/admin',{headers:{Authorization:'Basic '+btoa('admin:'+env.ADMIN_PASSWORD)}}),env).then(r=>r.json());assert.equal(stats.totals.users,1);assert.equal(stats.totals.opens,1);
+ for(let i=0;i<10;i++)await features(new Request('https://test.local/api/admin',{headers:{Authorization:'Basic '+btoa('admin:wrong')}}),env);
+ assert.equal((await features(new Request('https://test.local/api/admin',{headers:{Authorization:'Basic '+btoa('admin:wrong')}}),env)).status,429);
+ const a=player('A'),b=player('B');const room=newRoom('ABC234',a,'girl',5);room.players.push(b);act(room,a,'next',{});act(room,a,'draw',{round:room.round.id});act(room,b,'publish',{round:room.round.id,text:'test',revision:1});act(room,a,'guess',{round:room.round.id,score:room.round.target});
+ sqlite.prepare('INSERT INTO rooms VALUES (?,?,0,?)').run(room.code,JSON.stringify(room),Date.now()+600000);
+ const ia=crypto.randomUUID(),ib=crypto.randomUUID();const body={code:room.code,round:room.round.id,instance:ia,action:'join'};
+ assert.equal((await features(request('/api/voice',body,'wrong'),env)).status,401);
+ assert.equal((await features(request('/api/voice',{...body,round:'wrong'},a.token),env)).status,409);
+ await features(request('/api/voice',body,a.token),env);await features(request('/api/voice',{...body,instance:ib},b.token),env);
+ await features(request('/api/voice',{...body,action:'signal',to:b.id,payload:{type:'offer',sdp:{type:'offer',sdp:'test'}}},a.token),env);
+ const forB=await features(request('/api/voice',{...body,instance:ib,action:'poll'},b.token),env).then(r=>r.json());assert.equal(forB.signals.length,1);assert.equal(forB.peers.length,2);
+ const forA=await features(request('/api/voice',{...body,action:'poll'},a.token),env).then(r=>r.json());assert.equal(forA.signals.length,0,'signals delivered only to recipient');
+ await features(request('/api/voice',{...body,action:'leave'},a.token),env);assert.equal((await features(request('/api/voice',{...body,action:'poll'},a.token),env)).status,409);
+ console.log('PASS analytics deduplication, usage, admin authentication/rate limit, voice room membership, round scope, recipient isolation and leave.');
+}finally{await rm(temp,{recursive:true,force:true})}
