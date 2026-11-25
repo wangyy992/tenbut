@@ -40,6 +40,10 @@ export async function features(req:Request,env:Env):Promise<Response|null>{
   await db.prepare('INSERT OR IGNORE INTO visits(id,visitor,day) VALUES (?,?,?)').bind(event,id,day()).run();
   return new Response(null,{status:204,headers:{'Set-Cookie':`tb_visitor=${id}; Path=/; Max-Age=31536000; Secure; HttpOnly; SameSite=Lax`,'Cache-Control':'no-store'}});
  }
+ if(url.pathname==='/api/local-use'&&req.method==='POST'){
+  if(req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
+  await recordUse(req,db);return json({ok:true});
+ }
  if(url.pathname!=='/api/voice')return null;
  if(req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
  if(Number(req.headers.get('content-length')||0)>20000)return json({error:'Too large'},413);

@@ -1,5 +1,18 @@
 # Deploy TEN BUT to your Cloudflare account
 
+## Face-to-face play
+
+The home screen offers online rooms or face-to-face play. Face-to-face uses one
+device with 2–12 unique nicknames and 5/10/20 rounds. A draws blindly, hands the
+phone to B, and B explicitly reveals the target. B can speak aloud, select a
+suggestion, or type. Hiding the target shows a second handoff screen before A
+can guess. Scores are only rendered on B's reveal screen and the final result.
+Switching apps covers the screen; players must tap to show it again. Roles
+rotate by order entered. This is a casual honor-system game, not a security
+boundary against someone inspecting browser memory. Round secrets are never
+saved to browser storage or sent to the server. Refreshing resets local play.
+Starting a local game counts toward the same anonymous daily usage metric.
+
 ## Analytics and post-round voice discussion
 
 After deploying, add an encrypted runtime secret `ADMIN_PASSWORD` of at least 16
